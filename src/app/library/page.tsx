@@ -208,8 +208,8 @@ export default function LibraryPage() {
                             className={`${styles.resourceCard} glass`}
                         >
                             <div className={styles.resourceIcon}>
-                                {res.fileType.includes('pdf') ? <FileText color="#ef4444" /> :
-                                    res.fileType.includes('image') ? <Library color="#10b981" /> :
+                                {(res.fileType || '').includes('pdf') ? <FileText color="#ef4444" /> :
+                                    (res.fileType || '').includes('image') ? <Library color="#10b981" /> :
                                         <BookOpen color="var(--primary)" />}
                             </div>
                             <div style={{ flex: 1 }}>
