@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
-import path from 'path';
+import { put } from '@vercel/blob';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
 
@@ -43,20 +42,17 @@ export async function POST(request: NextRequest) {
             }, { status: 400 });
         }
 
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
-        const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-        const uploadPath = path.join(process.cwd(), 'public', 'uploads', fileName);
-
-        await writeFile(uploadPath, buffer);
+        // 3. Upload to Vercel Blob
+        const blob = await put(file.name, file, {
+            access: 'public',
+        });
 
         const resource = await prisma.resource.create({
             data: {
                 title: validation.data.title,
                 description: validation.data.description || '',
-                fileName: fileName,
-                fileUrl: `/uploads/${fileName}`,
+                fileName: file.name,
+                fileUrl: blob.url,
                 fileType: file.type,
                 category: validation.data.category,
             },
