@@ -24,6 +24,11 @@ export default function LibraryPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [previewResource, setPreviewResource] = useState<Resource | null>(null);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     // Form states
     const [file, setFile] = useState<File | null>(null);
@@ -118,6 +123,14 @@ export default function LibraryPage() {
             }).length
         };
     }, [resources]);
+
+    if (!isMounted) {
+        return (
+            <div className="container" style={{ minHeight: '100vh', background: 'var(--background)' }}>
+                {/* Minimal loading UI */}
+            </div>
+        );
+    }
 
     return (
         <div className="container">
@@ -221,7 +234,9 @@ export default function LibraryPage() {
                                 </div>
                                 <div className={styles.resourceMeta}>
                                     <span className={styles.badge}>{res.category}</span>
-                                    <span className={styles.resourceDate}>{new Date(res.createdAt).toLocaleDateString()}</span>
+                                    <span className={styles.resourceDate}>
+                                        {isMounted ? new Date(res.createdAt).toLocaleDateString() : 'Loading...'}
+                                    </span>
                                 </div>
                                 <div className={styles.resourceActions}>
                                     <button
