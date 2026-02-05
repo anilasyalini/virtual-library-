@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { BookOpen, Upload, Search, FileText, Download, X, Plus, Library, Users, Eye } from 'lucide-react';
 import styles from './library.module.css';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface Resource {
     id: string;
@@ -125,12 +124,10 @@ export default function LibraryPage() {
     }, [resources]);
 
     if (!isMounted) {
-        return (
-            <div className="container" style={{ minHeight: '100vh', background: 'var(--background)' }}>
-                {/* Minimal loading UI */}
-            </div>
-        );
+        return <div className="container" style={{ minHeight: '100vh', opacity: 0 }} />;
     }
+
+    const safeResources = Array.isArray(resources) ? resources : [];
 
     return (
         <div className="container">
@@ -144,9 +141,7 @@ export default function LibraryPage() {
                 </button>
             </header>
 
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+            <div
                 className={styles.statsContainer}
             >
                 <div className={styles.statCard}>
@@ -161,7 +156,7 @@ export default function LibraryPage() {
                     <span className={styles.statValue}>{stats.recent}</span>
                     <span className={styles.statLabel}>New Today</span>
                 </div>
-            </motion.div>
+            </div>
 
             <div className={styles.searchBar}>
                 <form onSubmit={handleSearch} className={styles.searchForm}>
@@ -179,7 +174,7 @@ export default function LibraryPage() {
             </div>
 
             <div className={styles.categoryContainer}>
-                {derivedCategories.map((cat) => (
+                {derivedCategories.map((cat: string) => (
                     <div
                         key={cat}
                         className={`${styles.categoryCard} glass ${category === cat ? styles.active : ''}`}
@@ -205,55 +200,45 @@ export default function LibraryPage() {
                         Try Again
                     </button>
                 </div>
-            ) : resources.length > 0 ? (
-                <motion.div
-                    layout
-                    className={styles.grid}
-                >
-                    <AnimatePresence mode="popLayout">
-                        {resources.map((res, index) => (
-                            <motion.div
-                                key={res.id}
-                                layout
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                transition={{ delay: index * 0.05 }}
-                                className={`${styles.resourceCard} glass`}
-                            >
-                                <div className={styles.resourceIcon}>
-                                    {res.fileType.includes('pdf') ? <FileText color="#ef4444" /> :
-                                        res.fileType.includes('image') ? <Library color="#10b981" /> :
-                                            <BookOpen color="var(--primary)" />}
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <h3 className={styles.resourceTitle}>{res.title}</h3>
-                                    <p className={styles.resourceDescription}>
-                                        {res.description || 'Premium academic resource available for download.'}
-                                    </p>
-                                </div>
-                                <div className={styles.resourceMeta}>
-                                    <span className={styles.badge}>{res.category}</span>
-                                    <span className={styles.resourceDate}>
-                                        {isMounted ? new Date(res.createdAt).toLocaleDateString() : 'Loading...'}
-                                    </span>
-                                </div>
-                                <div className={styles.resourceActions}>
-                                    <button
-                                        onClick={() => setPreviewResource(res)}
-                                        className="btn-primary"
-                                        style={{ flex: 1, justifyContent: 'center', background: 'rgba(255,255,255,0.1)' }}
-                                    >
-                                        <Eye size={18} /> Preview
-                                    </button>
-                                    <a href={res.fileUrl} download className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>
-                                        <Download size={18} /> Download
-                                    </a>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
-                </motion.div>
+            ) : safeResources.length > 0 ? (
+                <div className={styles.grid}>
+                    {safeResources.map((res) => (
+                        <div
+                            key={res.id || Math.random()}
+                            className={`${styles.resourceCard} glass`}
+                        >
+                            <div className={styles.resourceIcon}>
+                                {res.fileType.includes('pdf') ? <FileText color="#ef4444" /> :
+                                    res.fileType.includes('image') ? <Library color="#10b981" /> :
+                                        <BookOpen color="var(--primary)" />}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <h3 className={styles.resourceTitle}>{res.title}</h3>
+                                <p className={styles.resourceDescription}>
+                                    {res.description || 'Premium academic resource available for download.'}
+                                </p>
+                            </div>
+                            <div className={styles.resourceMeta}>
+                                <span className={styles.badge}>{res.category}</span>
+                                <span className={styles.resourceDate}>
+                                    {isMounted ? new Date(res.createdAt).toLocaleDateString() : 'Loading...'}
+                                </span>
+                            </div>
+                            <div className={styles.resourceActions}>
+                                <button
+                                    onClick={() => setPreviewResource(res)}
+                                    className="btn-primary"
+                                    style={{ flex: 1, justifyContent: 'center', background: 'rgba(255,255,255,0.1)' }}
+                                >
+                                    <Eye size={18} /> Preview
+                                </button>
+                                <a href={res.fileUrl} download className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>
+                                    <Download size={18} /> Download
+                                </a>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             ) : (
                 <div className={styles.emptyState}>
                     <Search size={48} opacity={0.3} />
@@ -309,47 +294,39 @@ export default function LibraryPage() {
                 </div>
             )}
 
-            <AnimatePresence>
-                {previewResource && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className={styles.previewOverlay}
-                        onClick={() => setPreviewResource(null)}
+            {previewResource && (
+                <div
+                    className={styles.previewOverlay}
+                    onClick={() => setPreviewResource(null)}
+                >
+                    <div
+                        className={styles.previewModal}
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            className={styles.previewModal}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className={styles.previewHeader}>
-                                <h2 className="font-display">{previewResource.title}</h2>
-                                <button className="btn-primary" onClick={() => setPreviewResource(null)} style={{ padding: '0.5rem' }}>
-                                    <X size={24} />
-                                </button>
-                            </div>
-                            <div className={styles.previewContent}>
-                                {previewResource.fileType.includes('pdf') ? (
-                                    <iframe src={previewResource.fileUrl} className={styles.previewIframe} />
-                                ) : previewResource.fileType.includes('image') ? (
-                                    <img src={previewResource.fileUrl} alt={previewResource.title} className={styles.previewImage} />
-                                ) : (
-                                    <div className={styles.emptyState}>
-                                        <FileText size={48} />
-                                        <p>Preview not available for this file type.</p>
-                                        <a href={previewResource.fileUrl} download className="btn-primary">
-                                            Download to View
-                                        </a>
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        <div className={styles.previewHeader}>
+                            <h2 className="font-display">{previewResource.title}</h2>
+                            <button className="btn-primary" onClick={() => setPreviewResource(null)} style={{ padding: '0.5rem' }}>
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className={styles.previewContent}>
+                            {(previewResource.fileType || '').includes('pdf') ? (
+                                <iframe src={previewResource.fileUrl} className={styles.previewIframe} />
+                            ) : (previewResource.fileType || '').includes('image') ? (
+                                <img src={previewResource.fileUrl} alt={previewResource.title} className={styles.previewImage} />
+                            ) : (
+                                <div className={styles.emptyState}>
+                                    <FileText size={48} />
+                                    <p>Preview not available for this file type.</p>
+                                    <a href={previewResource.fileUrl} download className="btn-primary">
+                                        Download to View
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
