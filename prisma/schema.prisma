@@ -18,4 +18,21 @@ model Resource {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   category    String   @default("Uncategorized")
+  course      String   @default("General")
+  specialization String @default("General")
+}
+
+model Course {
+  id              String           @id @default(cuid())
+  name            String           @unique
+  specializations Specialization[]
+}
+
+model Specialization {
+  id       String @id @default(cuid())
+  name     String
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id])
+
+  @@unique([name, courseId])
 }

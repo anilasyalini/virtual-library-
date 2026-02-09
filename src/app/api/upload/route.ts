@@ -7,6 +7,8 @@ const uploadSchema = z.object({
     title: z.string().min(3, 'Title must be at least 3 characters').max(100),
     description: z.string().max(500).optional(),
     category: z.string().min(2, 'Category must be at least 2 characters').max(50),
+    course: z.string().min(2).max(50),
+    specialization: z.string().min(1).max(50),
 });
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -21,6 +23,8 @@ export async function POST(request: NextRequest) {
         title = formData.get('title') as string;
         const description = formData.get('description') as string;
         category = formData.get('category') as string;
+        const course = formData.get('course') as string;
+        const specialization = formData.get('specialization') as string;
 
         // 1. Validate File existence and basic properties
         if (!file) {
@@ -36,7 +40,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 2. Validate metadata with Zod
-        const validation = uploadSchema.safeParse({ title, description, category });
+        const validation = uploadSchema.safeParse({ title, description, category, course, specialization });
         if (!validation.success) {
             return NextResponse.json({
                 error: 'Validation failed',
@@ -57,6 +61,8 @@ export async function POST(request: NextRequest) {
                 fileUrl: blob.url,
                 fileType: file.type,
                 category: validation.data.category,
+                course: validation.data.course,
+                specialization: validation.data.specialization,
             },
         });
 

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { BookOpen, Upload, Search, FileText, Download, X, Plus, Library, Users, Eye } from 'lucide-react';
+import { BookOpen, Upload, Search, FileText, Download, X, Plus, Library, Users, Eye, GraduationCap, Settings } from 'lucide-react';
 import styles from './library.module.css';
 import Link from 'next/link';
+// We will fetch courses from API now, constants are for initial seed only
 
 interface Resource {
     id: string;
@@ -12,14 +13,31 @@ interface Resource {
     fileUrl: string;
     fileType: string;
     category: string;
+    course: string;
+    specialization: string;
     createdAt: string;
+}
+
+interface DBSpecialization {
+    id: string;
+    name: string;
+}
+
+interface DBCourse {
+    id: string;
+    name: string;
+    specializations: DBSpecialization[];
 }
 
 export default function LibraryPage() {
     const [resources, setResources] = useState<Resource[]>([]);
     const [search, setSearch] = useState('');
     const [category, setCategory] = useState('All');
+    const [selectedCourse, setSelectedCourse] = useState('All');
+    const [selectedSpecialization, setSelectedSpecialization] = useState('All');
+    const [dbCourses, setDbCourses] = useState<DBCourse[]>([]);
     const [isUploadOpen, setIsUploadOpen] = useState(false);
+    const [isManageOpen, setIsManageOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [previewResource, setPreviewResource] = useState<Resource | null>(null);
@@ -27,13 +45,31 @@ export default function LibraryPage() {
 
     useEffect(() => {
         setIsMounted(true);
+        fetchCourses();
     }, []);
+
+    const fetchCourses = async () => {
+        try {
+            const res = await fetch('/api/courses');
+            const data = await res.json();
+            if (Array.isArray(data)) setDbCourses(data);
+        } catch (err) {
+            console.error('Failed to fetch courses:', err);
+        }
+    };
 
     // Form states
     const [file, setFile] = useState<File | null>(null);
     const [title, setTitle] = useState('');
     const [desc, setDesc] = useState('');
-    const [formCategory, setFormCategory] = useState('');
+    const [formCategory, setFormCategory] = useState('Notes');
+    const [formCourse, setFormCourse] = useState('');
+    const [formSpecialization, setFormSpecialization] = useState('');
+
+    // Manage Flow states
+    const [newCourseName, setNewCourseName] = useState('');
+    const [newSpecName, setNewSpecName] = useState('');
+    const [targetCourseId, setTargetCourseId] = useState('');
 
     const derivedCategories = useMemo(() => {
         if (!Array.isArray(resources)) return ['All'];
@@ -45,11 +81,16 @@ export default function LibraryPage() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch(`/api/resources?q=${search}&category=${category}`);
+            const params = new URLSearchParams();
+            if (search) params.append('q', search);
+            if (category !== 'All') params.append('category', category);
+            if (selectedCourse !== 'All') params.append('course', selectedCourse);
+            if (selectedSpecialization !== 'All') params.append('specialization', selectedSpecialization);
+
+            const res = await fetch(`/api/resources?${params.toString()}`);
 
             if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                throw new Error(errorData.message || errorData.error || `Server responded with ${res.status}`);
+                setError(errorData.message || errorData.error || `Server responded with ${res.status}`);
             }
 
             const data = await res.json();
@@ -59,7 +100,7 @@ export default function LibraryPage() {
             } else {
                 console.error('Expected array of resources but got:', data);
                 setResources([]);
-                setError('Received unexpected data format from server.');
+                setError(data.message || data.error || 'Received unexpected data format from server.');
             }
         } catch (err) {
             console.error('Fetch error:', err);
@@ -67,7 +108,7 @@ export default function LibraryPage() {
             setResources([]);
         }
         setLoading(false);
-    }, [search, category]);
+    }, [search, category, selectedCourse, selectedSpecialization]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -90,6 +131,8 @@ export default function LibraryPage() {
         formData.append('title', title);
         formData.append('description', desc);
         formData.append('category', formCategory);
+        formData.append('course', formCourse);
+        formData.append('specialization', formSpecialization);
 
         try {
             const res = await fetch('/api/upload', {
@@ -186,6 +229,61 @@ export default function LibraryPage() {
                 ))}
             </div>
 
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h2 className={styles.sectionTitle}>Select Course</h2>
+                <button className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }} onClick={() => setIsManageOpen(true)}>
+                    <Plus size={16} /> Add Course
+                </button>
+            </div>
+            <div className={styles.categoryContainer}>
+                <div
+                    className={`${styles.categoryCard} glass ${selectedCourse === 'All' ? styles.active : ''}`}
+                    onClick={() => {
+                        setSelectedCourse('All');
+                        setSelectedSpecialization('All');
+                    }}
+                >
+                    <Library className={styles.categoryIcon} />
+                    <span className={styles.categoryLabel}>All Courses</span>
+                </div>
+                {dbCourses.map((c) => (
+                    <div
+                        key={c.id}
+                        className={`${styles.categoryCard} glass ${selectedCourse === c.name ? styles.active : ''}`}
+                        onClick={() => {
+                            setSelectedCourse(c.name);
+                            setSelectedSpecialization('All');
+                        }}
+                    >
+                        <GraduationCap className={styles.categoryIcon} />
+                        <span className={styles.categoryLabel}>{c.name}</span>
+                    </div>
+                ))}
+            </div>
+
+            {selectedCourse !== 'All' && (
+                <>
+                    <h2 className={styles.sectionTitle}>Specializations for {selectedCourse}</h2>
+                    <div className={styles.specializationContainer}>
+                        <div
+                            className={`${styles.specCard} glass ${selectedSpecialization === 'All' ? styles.active : ''}`}
+                            onClick={() => setSelectedSpecialization('All')}
+                        >
+                            All {selectedCourse}
+                        </div>
+                        {(dbCourses.find(c => c.name === selectedCourse)?.specializations || []).map((s) => (
+                            <div
+                                key={s.id}
+                                className={`${styles.specCard} glass ${selectedSpecialization === s.name ? styles.active : ''}`}
+                                onClick={() => setSelectedSpecialization(s.name)}
+                            >
+                                {s.name}
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
+
             {loading ? (
                 <div className={styles.loadingContainer}>
                     <div className={styles.spinner}></div>
@@ -219,9 +317,13 @@ export default function LibraryPage() {
                                 </p>
                             </div>
                             <div className={styles.resourceMeta}>
-                                <span className={styles.badge}>{res.category}</span>
+                                <div className={styles.resourceBadges}>
+                                    <span className={styles.badge}>{res.course}</span>
+                                    <span className={styles.badge}>{res.specialization}</span>
+                                    <span className={styles.badge}>{res.category}</span>
+                                </div>
                                 <span className={styles.resourceDate}>
-                                    {isMounted ? new Date(res.createdAt).toLocaleDateString() : 'Loading...'}
+                                    {isMounted && res.createdAt ? new Date(res.createdAt).toLocaleDateString() : 'Loading...'}
                                 </span>
                             </div>
                             <div className={styles.resourceActions}>
@@ -260,14 +362,47 @@ export default function LibraryPage() {
                                 <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Intro to Algorithms" required />
                             </div>
                             <div className={styles.formGroup}>
-                                <label>Category (Topic)</label>
-                                <input
-                                    type="text"
+                                <label>Course</label>
+                                <select
+                                    value={formCourse}
+                                    onChange={(e) => {
+                                        setFormCourse(e.target.value);
+                                        setFormSpecialization('');
+                                    }}
+                                    required
+                                >
+                                    <option value="">Select Course</option>
+                                    {dbCourses.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                                </select>
+                            </div>
+                            {formCourse && (
+                                <div className={styles.formGroup}>
+                                    <label>Specialization</label>
+                                    <select
+                                        value={formSpecialization}
+                                        onChange={(e) => setFormSpecialization(e.target.value)}
+                                        required
+                                    >
+                                        <option value="">Select Specialization</option>
+                                        {(dbCourses.find(c => c.name === formCourse)?.specializations || []).map(s => (
+                                            <option key={s.id} value={s.name}>{s.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                            <div className={styles.formGroup}>
+                                <label>Material Type</label>
+                                <select
                                     value={formCategory}
                                     onChange={(e) => setFormCategory(e.target.value)}
-                                    placeholder="e.g. Quantum Physics, History, etc."
                                     required
-                                />
+                                >
+                                    <option value="Notes">Notes</option>
+                                    <option value="Books">Books</option>
+                                    <option value="Question Papers">Question Papers</option>
+                                    <option value="Project Reports">Project Reports</option>
+                                    <option value="Other">Other</option>
+                                </select>
                             </div>
                             <div className={styles.formGroup}>
                                 <label>Description</label>
@@ -323,6 +458,76 @@ export default function LibraryPage() {
                                     </a>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {isManageOpen && (
+                <div className={styles.uploadOverlay}>
+                    <div className={`${styles.uploadModal} glass`}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
+                            <h2 className="font-display">Manage Academic Sections</h2>
+                            <X style={{ cursor: 'pointer' }} onClick={() => setIsManageOpen(false)} />
+                        </div>
+
+                        <div style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+                            <h3 style={{ marginBottom: '1rem' }}>Add New Course</h3>
+                            <div className={styles.formGroup} style={{ flexDirection: 'row', gap: '1rem' }}>
+                                <input
+                                    style={{ flex: 1 }}
+                                    type="text"
+                                    placeholder="e.g. B.A. LLB"
+                                    value={newCourseName}
+                                    onChange={(e) => setNewCourseName(e.target.value)}
+                                />
+                                <button
+                                    className="btn-primary"
+                                    onClick={async () => {
+                                        if (!newCourseName) return;
+                                        await fetch('/api/courses', {
+                                            method: 'POST',
+                                            body: JSON.stringify({ type: 'course', name: newCourseName }),
+                                        });
+                                        setNewCourseName('');
+                                        fetchCourses();
+                                    }}
+                                >
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style={{ padding: '1rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+                            <h3 style={{ marginBottom: '1rem' }}>Add Specialization</h3>
+                            <div className={styles.formGroup}>
+                                <select value={targetCourseId} onChange={(e) => setTargetCourseId(e.target.value)}>
+                                    <option value="">Select Course</option>
+                                    {dbCourses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            </div>
+                            <div className={styles.formGroup} style={{ flexDirection: 'row', gap: '1rem' }}>
+                                <input
+                                    style={{ flex: 1 }}
+                                    type="text"
+                                    placeholder="e.g. Criminal Law"
+                                    value={newSpecName}
+                                    onChange={(e) => setNewSpecName(e.target.value)}
+                                />
+                                <button
+                                    className="btn-primary"
+                                    onClick={async () => {
+                                        if (!newSpecName || !targetCourseId) return;
+                                        await fetch('/api/courses', {
+                                            method: 'POST',
+                                            body: JSON.stringify({ type: 'specialization', name: newSpecName, courseId: targetCourseId }),
+                                        });
+                                        setNewSpecName('');
+                                        fetchCourses();
+                                    }}
+                                >
+                                    Add
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
