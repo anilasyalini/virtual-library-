@@ -37,8 +37,8 @@ model Specialization {
   @@unique([name, courseId])
 }
 enum Role {
+  
   STUDENT
-  FACULTY
   ADMIN
 }
 

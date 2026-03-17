@@ -166,11 +166,12 @@ export default function LoginPage() {
 
           </form>
 
-          <p className="form-footer">
-            Don't have an account?{" "}
-            <Link href="/signup">Create one — it's free</Link>
-          </p>
-
+        <p className="form-footer">
+  Don't have an account?{" "}
+  <Link href="/signup" className="signup-link">
+    Create one — it's free
+  </Link>
+</p>
         </div>
       </div>
     </>
