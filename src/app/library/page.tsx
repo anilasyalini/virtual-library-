@@ -169,7 +169,7 @@ export default function LibraryPage() {
     }, [resources]);
 
     if (!isMounted) {
-        return <div className="container" style={{ minHeight: '100vh', opacity: 0 }} />;
+        return <div className="container" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className={styles.spinner}></div></div>;
     }
 
     const safeResources = Array.isArray(resources) ? resources : [];

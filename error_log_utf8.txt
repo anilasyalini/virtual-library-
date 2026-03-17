@@ -1,0 +1,77 @@
+﻿node : Full Error: Pris
+maClientUnknownRequestE
+rror: 
+At line:1 char:1
++ node 
+test_create_user.js > 
+error_log.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (Full Error: P   
+ ri...nRequestError    
+: :String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+Invalid 
+`prisma.user.create()` 
+invocation in
+C:\Users\DELL\Downloads
+\library\test_create_us
+er.js:6:40
+
+  3 
+  4 async function 
+main() {
+  5     try {
+ΓåÆ 6         const 
+user = await 
+prisma.user.create(
+Error occurred during 
+query execution:
+ConnectorError(Connecto
+rError { 
+user_facing_error: 
+None, kind: QueryError(
+PostgresError { code: 
+"42704", message: 
+"type \"public.Role\" 
+does not exist", 
+severity: "ERROR", 
+detail: None, column: 
+None, hint: None }), 
+transient: false })
+    at 
+ei.handleRequestError (
+C:\Users\DELL\Downloads
+\library\node_modules\@
+prisma\client\runtime\l
+ibrary.js:121:7458)
+    at ei.handleAndLogR
+equestError (C:\Users\D
+ELL\Downloads\library\n
+ode_modules\@prisma\cli
+ent\runtime\library.js:
+121:6593)
+    at ei.request (C:\U
+sers\DELL\Downloads\lib
+rary\node_modules\@pris
+ma\client\runtime\libra
+ry.js:121:6300)
+    at async a (C:\User
+s\DELL\Downloads\librar
+y\node_modules\@prisma\
+client\runtime\library.
+js:130:9551)
+    at async main (C:\U
+sers\DELL\Downloads\lib
+rary\test_create_user.j
+s:6:22) {
+  clientVersion: 
+'6.19.2'
+}
