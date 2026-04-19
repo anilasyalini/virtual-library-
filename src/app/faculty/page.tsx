@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { BookOpen, Upload, Search, FileText, Download, X, Plus, Library, Users, Eye, GraduationCap, Settings } from 'lucide-react';
+import { BookOpen, Upload, Search, FileText, Download, X, Plus, Library, Users, Eye, GraduationCap, Settings, Trash2 } from 'lucide-react';
 import styles from './faculty.module.css';
 import Link from 'next/link';
 // We will fetch courses from API now, constants are for initial seed only
@@ -152,6 +152,26 @@ export default function LibraryPage() {
             }
         } catch (err) {
             console.error(err);
+        }
+    };
+
+    const handleDelete = async (resId: string, resTitle: string) => {
+        if (!confirm(`Are you sure you want to delete "${resTitle}"? This action cannot be undone.`)) return;
+        try {
+            const res = await fetch('/api/resources/delete', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: resId }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                fetchResources();
+            } else {
+                alert(data.error || 'Failed to delete resource');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Failed to delete resource');
         }
     };
 
@@ -339,6 +359,13 @@ export default function LibraryPage() {
                                 <a href={res.fileUrl} download className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>
                                     <Download size={18} /> Download
                                 </a>
+                                <button
+                                    onClick={() => handleDelete(res.id, res.title)}
+                                    className="btn-primary"
+                                    style={{ flex: 1, justifyContent: 'center', background: 'rgba(239,68,68,0.2)', color: '#f87171' }}
+                                >
+                                    <Trash2 size={18} /> Delete
+                                </button>
                             </div>
                         </div>
                     ))}
