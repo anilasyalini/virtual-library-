@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
     BookOpen, Upload, Search, FileText, Download, X, Plus,
     Library, Eye, GraduationCap, Grid, List, ChevronRight,
@@ -19,6 +19,7 @@ interface Resource {
     course: string;
     specialization: string;
     createdAt: string;
+    starredBy?: { id: string }[];
 }
 
 interface DBSpecialization {
@@ -40,6 +41,8 @@ export default function LibraryPage() {
     const [category, setCategory] = useState('All');
     const [selectedCourse, setSelectedCourse] = useState('All');
     const [selectedSpecialization, setSelectedSpecialization] = useState('All');
+    const [activeTab, setActiveTab] = useState<'library' | 'recent' | 'starred'>('library');
+    const [currentUser, setCurrentUser] = useState<any>(null);
     const [dbCourses, setDbCourses] = useState<DBCourse[]>([]);
     const [isUploadOpen, setIsUploadOpen] = useState(false);
     const [isManageOpen, setIsManageOpen] = useState(false);
@@ -67,10 +70,15 @@ const COURSE_SPECIALIZATIONS: Record<string, string[]> = {
     const [filterCourse, setFilterCourse] = useState<string>('');
     const [filterSpec, setFilterSpec] = useState<string>('');
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+    const filterBarRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setIsMounted(true);
         fetchCourses();
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try { setCurrentUser(JSON.parse(userStr)); } catch (e) {}
+        }
     }, []);
 
     const fetchCourses = async () => {
@@ -106,12 +114,23 @@ const COURSE_SPECIALIZATIONS: Record<string, string[]> = {
             const params = new URLSearchParams();
             if (search) params.append('q', search);
             if (category !== 'All') params.append('category', category);
-            if (selectedCourse !== 'All') params.append('course', selectedCourse);
-            if (selectedSpecialization !== 'All') params.append('specialization', selectedSpecialization);
+            
+            const finalCourse = filterCourse || (selectedCourse !== 'All' ? selectedCourse : null);
+            if (finalCourse) params.append('course', finalCourse);
+            
+            const finalSpec = filterSpec || (selectedSpecialization !== 'All' ? selectedSpecialization : null);
+            if (finalSpec) params.append('specialization', finalSpec);
+            
             if (filterFileType.length > 0) params.append('fileType', filterFileType.join(','));
-            if (filterDateRange) params.append('dateRange', filterDateRange);
-            if (filterCourse) params.append('course', filterCourse);
-            if (filterSpec) params.append('specialization', filterSpec);
+            
+            // Apply active tab logic
+            if (activeTab === 'recent') params.append('dateRange', 'today');
+            else if (filterDateRange) params.append('dateRange', filterDateRange);
+
+            if (activeTab === 'starred') {
+                params.append('starred', 'true');
+                if (currentUser?.id) params.append('userId', currentUser.id);
+            }
 
             const res = await fetch(`/api/resources?${params.toString()}`);
             const data = await res.json();
@@ -134,12 +153,17 @@ const COURSE_SPECIALIZATIONS: Record<string, string[]> = {
             setResources([]);
         }
         setLoading(false);
-    }, [search, category, selectedCourse, selectedSpecialization, filterFileType, filterDateRange, filterCourse, filterSpec]);
+    }, [search, category, selectedCourse, selectedSpecialization, filterFileType, filterDateRange, filterCourse, filterSpec, activeTab, currentUser]);
 
     useEffect(() => {
-        const handler = () => setOpenDropdown(null);
-        document.addEventListener('click', handler);
-        return () => document.removeEventListener('click', handler);
+        const handler = (e: MouseEvent) => {
+            if (filterBarRef.current && filterBarRef.current.contains(e.target as Node)) {
+                return;
+            }
+            setOpenDropdown(null);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
     }, []);
 
     useEffect(() => {
@@ -166,6 +190,30 @@ const COURSE_SPECIALIZATIONS: Record<string, string[]> = {
                 setFile(null); setTitle(''); setDesc('');
             }
         } catch (err) { console.error(err); }
+    };
+
+    const toggleStar = async (e: React.MouseEvent, resId: string, isStarred: boolean) => {
+        e.stopPropagation();
+        if (!currentUser) return alert('Please login to star resources');
+        
+        setResources(prev => prev.map(r => 
+            r.id === resId ? { ...r, starredBy: isStarred ? [] : [{id: currentUser.id}] } : r
+        ));
+
+        try {
+            await fetch('/api/resources/star', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    resourceId: resId,
+                    userId: currentUser.id,
+                    action: isStarred ? 'unstar' : 'star'
+                })
+            });
+            fetchResources();
+        } catch (err) {
+            console.error(err);
+        }
     };
 
     const stats = useMemo(() => {
@@ -822,15 +870,21 @@ const COURSE_SPECIALIZATIONS: Record<string, string[]> = {
 
                     <div className="sidebar-section">
                         <div
-                            className={`sidebar-item ${selectedCourse === 'All' && selectedSpecialization === 'All' ? 'active' : ''}`}
-                            onClick={() => { setSelectedCourse('All'); setSelectedSpecialization('All'); setExpandedCourse(null); }}
+                            className={`sidebar-item ${activeTab === 'library' ? 'active' : ''}`}
+                            onClick={() => { setActiveTab('library'); setSelectedCourse('All'); setSelectedSpecialization('All'); setExpandedCourse(null); }}
                         >
                             <Home size={18} /> My Library
                         </div>
-                        <div className="sidebar-item">
+                        <div 
+                            className={`sidebar-item ${activeTab === 'recent' ? 'active' : ''}`}
+                            onClick={() => { setActiveTab('recent'); setSelectedCourse('All'); setSelectedSpecialization('All'); }}
+                        >
                             <Clock size={18} /> Recent
                         </div>
-                        <div className="sidebar-item">
+                        <div 
+                            className={`sidebar-item ${activeTab === 'starred' ? 'active' : ''}`}
+                            onClick={() => { setActiveTab('starred'); setSelectedCourse('All'); setSelectedSpecialization('All'); }}
+                        >
                             <Star size={18} /> Starred
                         </div>
                     </div>
@@ -907,8 +961,8 @@ const COURSE_SPECIALIZATIONS: Record<string, string[]> = {
                     </div>
 
                     {/* Filter Toolbar */}
-                    <div style={{ marginBottom: 16 }} onClick={() => setOpenDropdown(null)}>
-                        <div className="filter-bar" onClick={e => e.stopPropagation()}>
+                    <div style={{ marginBottom: 16 }}>
+                        <div className="filter-bar" ref={filterBarRef}>
 
                             {/* ── File Type ── */}
                             <div className="filter-dropdown-wrap">
@@ -1133,6 +1187,9 @@ const COURSE_SPECIALIZATIONS: Record<string, string[]> = {
                                             </td>
                                             <td onClick={(e) => e.stopPropagation()}>
                                                 <div className="row-actions">
+                                                    <button className="action-btn" onClick={(e) => toggleStar(e, res.id, !!(res.starredBy?.some(u => u.id === currentUser?.id)))}>
+                                                        <Star size={14} fill={res.starredBy?.some(u => u.id === currentUser?.id) ? '#fbbc04' : 'none'} color={res.starredBy?.some(u => u.id === currentUser?.id) ? '#fbbc04' : '#1a73e8'} />
+                                                    </button>
                                                     <button className="action-btn" onClick={() => setPreviewResource(res)}>
                                                         <Eye size={14} /> Preview
                                                     </button>

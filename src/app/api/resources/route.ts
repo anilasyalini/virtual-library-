@@ -10,12 +10,35 @@ export async function GET(request: NextRequest) {
         category = searchParams.get('category');
         const course = searchParams.get('course');
         const specialization = searchParams.get('specialization');
+        const dateRange = searchParams.get('dateRange');
+        const starred = searchParams.get('starred') === 'true';
+        const userId = searchParams.get('userId'); // pass userId from frontend for starred queries
+        const fileType = searchParams.get('fileType');
 
-        console.log('API FETCH: Started fetching resources', { query, category, course, specialization });
+        console.log('API FETCH: Started fetching resources', { query, category, course, specialization, dateRange, starred, userId, fileType });
 
         // Validate database connection check (optional but helpful)
         if (!prisma) {
             throw new Error('Database client not initialized');
+        }
+
+        let dateFilter = {};
+        if (dateRange === 'today') {
+            dateFilter = { createdAt: { gte: new Date(Date.now() - 86400000) } };
+        } else if (dateRange === '7days') {
+            dateFilter = { createdAt: { gte: new Date(Date.now() - 7 * 86400000) } };
+        } else if (dateRange === '30days') {
+            dateFilter = { createdAt: { gte: new Date(Date.now() - 30 * 86400000) } };
+        } else if (dateRange === 'year') {
+            dateFilter = { createdAt: { gte: new Date(Date.now() - 365 * 86400000) } };
+        }
+
+        let fileTypeFilter = {};
+        if (fileType) {
+            const types = fileType.split(',');
+            fileTypeFilter = {
+                OR: types.map(t => ({ fileType: { contains: t, mode: 'insensitive' as any } }))
+            };
         }
 
         const resources = await prisma.resource.findMany({
@@ -30,7 +53,15 @@ export async function GET(request: NextRequest) {
                     category && category !== 'All' ? { category: category } : {},
                     course && course !== 'All' ? { course: course } : {},
                     specialization && specialization !== 'All' ? { specialization: specialization } : {},
+                    dateFilter,
+                    fileTypeFilter,
+                    starred && userId ? { starredBy: { some: { id: userId } } } : {}
                 ],
+            },
+            include: {
+                starredBy: {
+                    select: { id: true }
+                }
             },
             orderBy: {
                 createdAt: 'desc',

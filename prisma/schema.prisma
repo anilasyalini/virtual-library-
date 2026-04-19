@@ -20,6 +20,7 @@ model Resource {
   category       String   @default("Uncategorized")
   course         String   @default("General")
   specialization String   @default("General")
+  starredBy      User[]   @relation("UserStars")
 }
 
 model Course {
@@ -42,8 +43,9 @@ model User {
   email     String   @unique
   password  String
   name      String
-  createdAt DateTime @default(now())
-  role      Role
+  createdAt        DateTime   @default(now())
+  role             Role
+  starredResources Resource[] @relation("UserStars")
 }
 
 enum Role {
