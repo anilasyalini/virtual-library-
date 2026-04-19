@@ -835,6 +835,48 @@ const COURSE_SPECIALIZATIONS: Record<string, string[]> = {
                     cursor: pointer; transition: background .15s;
                 }
                 .btn-ghost:hover { background: #f1f3f4; }
+                
+                /* ── RESPONSIVE ── */
+                @media (max-width: 768px) {
+                    .topbar-logo span { display: none; }
+                    .topbar-logo { min-width: auto; }
+                    
+                    .layout { flex-direction: column; }
+                    .sidebar {
+                        position: sticky; top: 64px; left: 0; right: 0;
+                        width: 100%; min-width: 100%;
+                        height: 64px;
+                        display: flex; align-items: center;
+                        border-right: none;
+                        border-bottom: 1px solid #e0e0e0;
+                        padding: 0 16px;
+                        overflow-x: auto;
+                        overflow-y: hidden;
+                        background: #fff;
+                        z-index: 90;
+                    }
+                    .main { margin-left: 0; padding: 16px; }
+                    
+                    .sidebar-section { display: flex; align-items: center; margin: 0; }
+                    .sidebar-item { border-radius: 16px; margin-right: 8px; white-space: nowrap; height: 36px; padding: 0 16px; font-size: 13px; }
+                    .sidebar-label { display: none; }
+                    .new-btn { display: none; } /* Kept topbar upload button */
+                    .divider { width: 1px; height: 32px; flex-shrink: 0; margin: 0 8px; }
+                    .sidebar-sub { display: none; }
+                }
+
+                @media (max-width: 480px) {
+                    .topbar { padding: 0 12px; gap: 8px; }
+                    .btn-upload span { display: none; }
+                    .btn-upload { padding: 8px 12px; font-size: 0; }
+                    .btn-upload svg { margin: 0; }
+                    .search-wrap input { font-size: 14px; padding-left: 36px; }
+                    .search-icon { left: 12px; }
+                    
+                    .stats-bar { flex-direction: column; gap: 8px; }
+                    .file-title { max-width: 150px; }
+                    .toolbar-left { flex-wrap: wrap; }
+                }
             `}</style>
 
             {/* ── TOP BAR ── */}
