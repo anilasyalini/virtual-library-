@@ -299,3 +299,9 @@
   .signup-left { display: none; }
   .signup-right { width: 100%; padding: 32px 24px; }
 }
+
+@media (max-width: 480px) {
+  .signup-right { padding: 24px 16px; }
+  .form-header h2 { font-size: 24px; }
+  .btn-submit { padding: 12px; }
+}
