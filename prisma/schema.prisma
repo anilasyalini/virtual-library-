@@ -3,23 +3,23 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Resource {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  fileUrl     String
-  fileName    String
-  fileType    String
-  uploader    String   @default("Anonymous Student")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  category    String   @default("Uncategorized")
-  course      String   @default("General")
-  specialization String @default("General")
+  id             String   @id @default(cuid())
+  title          String
+  description    String?
+  fileUrl        String
+  fileName       String
+  fileType       String
+  uploader       String   @default("Anonymous Student")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  category       String   @default("Uncategorized")
+  course         String   @default("General")
+  specialization String   @default("General")
 }
 
 model Course {
@@ -36,17 +36,18 @@ model Specialization {
 
   @@unique([name, courseId])
 }
-enum Role {
-  
-  STUDENT
-  ADMIN
-}
 
 model User {
-  id         String   @id @default(cuid())
-  name       String
-  email      String   @unique
-  password   String
-  role       Role
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  role      Role
+}
+
+enum Role {
+  STUDENT
+  FACULTY
+  ADMIN
 }

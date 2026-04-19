@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
 
 const uploadSchema = z.object({
     title: z.string().min(3, 'Title must be at least 3 characters').max(100),
@@ -48,17 +49,25 @@ export async function POST(request: NextRequest) {
             }, { status: 400 });
         }
 
-        // 3. Upload to Vercel Blob
-        const blob = await put(file.name, file, {
-            access: 'public',
-        });
+        // 3. Upload to Local Storage
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+        await mkdir(uploadDir, { recursive: true });
+        
+        const uniqueFileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+        const filePath = path.join(uploadDir, uniqueFileName);
+        
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        await writeFile(filePath, buffer);
+
+        const fileUrl = `/uploads/${uniqueFileName}`;
 
         const resource = await prisma.resource.create({
             data: {
                 title: validation.data.title,
                 description: validation.data.description || '',
                 fileName: file.name,
-                fileUrl: blob.url,
+                fileUrl: fileUrl,
                 fileType: file.type,
                 category: validation.data.category,
                 course: validation.data.course,
