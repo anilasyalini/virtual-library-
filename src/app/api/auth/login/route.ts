@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
@@ -46,7 +44,7 @@ export async function POST(req: Request) {
     // ✅ Set authentication cookie
     response.cookies.set("auth", user.id, {
       httpOnly: true,
-      secure: false, // change to true in production (HTTPS)
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24, // 1 day
